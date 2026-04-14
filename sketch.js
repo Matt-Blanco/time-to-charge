@@ -37,3 +37,5 @@ navigator.getBattery().then((bat) => {
     battery = bat;
   });
 });
+
+navigator.vibrate(10000);
