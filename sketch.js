@@ -42,6 +42,7 @@ navigator.getBattery().then((bat) => {
 });
 
 function triggerHaptic() {
+  console.log('triggering haptic')
   navigator.vibrate(500);
   hapticOn++;
 }
