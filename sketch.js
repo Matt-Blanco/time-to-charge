@@ -43,7 +43,7 @@ navigator.getBattery().then((bat) => {
 
 function triggerHaptic() {
   navigator.vibrate(500);
-  hapticOn++;;
+  hapticOn++;
 }
 
-setInterval(triggerHaptic, 1000)
+setInterval(() => triggerHaptic(), 1000)
