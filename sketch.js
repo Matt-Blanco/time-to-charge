@@ -5,6 +5,8 @@ let battery = {
   dischargingTime: 0,
 };
 
+let hapticOn = 0;
+
 function setup() {
   createCanvas(400, 400);
 }
@@ -12,10 +14,10 @@ function setup() {
 function draw() {
   background(220);
 
-  text(battery.charging, width / 2, height / 2);
-  text(`${battery.chargingTime / 3600} hour(s)`, width / 2, height / 2 - 20);
-  text(battery.dischargingTime, width / 2, height / 2 - 30);
-  text(battery.level, width / 2, height / 2 - 50);
+  text(`charging: ${battery.charging}`, width / 2, height / 2);
+  text(`charge time ${battery.chargingTime / 3600} hour(s)`, width / 2, height / 2 - 20);
+  text(`discharge time: ${battery.dischargingTime}`, width / 2, height / 2 - 30);
+  text(`battery level: ${battery.level}`, width / 2, height / 2 - 50);
 }
 
 navigator.getBattery().then((bat) => {
@@ -40,7 +42,7 @@ navigator.getBattery().then((bat) => {
 
 function triggerHaptic() {
   navigator.vibrate(500);
-  hapticOn = true;
+  hapticOn++;;
 }
 
 setInterval(triggerHaptic, 1000)
