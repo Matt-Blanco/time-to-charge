@@ -18,6 +18,7 @@ function draw() {
   text(`charge time ${battery.chargingTime / 3600} hour(s)`, width / 2, height / 2 - 20);
   text(`discharge time: ${battery.dischargingTime}`, width / 2, height / 2 - 30);
   text(`battery level: ${battery.level}`, width / 2, height / 2 - 50);
+  text(`haptic cound: ${hapticOn}`, width / 2, height / 2 - 60);
 }
 
 navigator.getBattery().then((bat) => {
