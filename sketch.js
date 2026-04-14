@@ -38,4 +38,9 @@ navigator.getBattery().then((bat) => {
   });
 });
 
-navigator.vibrate(10000);
+function triggerHaptic() {
+  navigator.vibrate(500);
+  hapticOn = true;
+}
+
+setInterval(triggerHaptic, 1000)
