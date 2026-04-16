@@ -19,7 +19,7 @@ function draw() {
   if (frameCount % 15 === 0) {
     if (battery.charging) {
       chargingCount++;
-    } else {
+    } else if (!battery.charging && chargingCount > 0) {
       chargingCount--;
     }
   }
