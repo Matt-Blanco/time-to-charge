@@ -8,14 +8,102 @@ let battery = {
 };
 
 let chargingCount = 0;
+let glitch;
+let frontCapture;
+let backCapture;
+let showBackCapture = true;
+
+let detector;
+let detections = [];
+
+function videoReady() {
+  // Models available are 'cocossd', 'yolo'
+  detector = ml5.objectDetector("cocossd", modelReady);
+}
+
+// Use `exact` only on devices likely to have a rear camera.
+// On laptops/desktops, `exact: "environment"` throws OverconstrainedError;
+// a plain string acts as a preference and falls back to the available camera.
+function videoConstraints(preferred) {
+  const ua = navigator.userAgent;
+  const isMobileOrTablet =
+    /Mobi|Android|iPhone|iPad|iPod|Tablet/i.test(ua) ||
+    (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+  return {
+    video: {
+      facingMode: isMobileOrTablet ? { exact: preferred } : preferred,
+    },
+  };
+}
+
+function modelReady() {
+  detector.detect(frontCapture, gotDetections);
+}
+
+function gotDetections(error, results) {
+  if (error) {
+    console.error(error);
+    return;
+  }
+  detections = results;
+  detector.detect(frontCapture, gotDetections);
+}
 
 function setup() {
   createCanvas(windowWidth, windowHeight);
+
+  glitch = new Glitch();
+  glitch.pixelate(1);
+
+  frontCapture = createCapture(videoConstraints("user"), videoReady);
+  frontCapture.size(width / 2, height / 2);
+  frontCapture.hide();
+
+  if (showBackCapture) {
+    backCapture = createCapture(videoConstraints("environment"));
+    backCapture.size(width / 2, height / 2);
+    backCapture.hide();
+  }
 }
 
 function draw() {
-  background(220);
+  background(0);
 
+  glitchConnection();
+}
+
+function glitchConnection() {
+  if (frameCount % 3 === 0) {
+    if (!mouseIsPressed) {
+      glitch.loadImage(frontCapture);
+    }
+
+    const personBounds = detections
+      .filter((d) => d.label.toLowerCase() === "person")
+      .reduce(
+        (person, bounds) => {
+          if (person.width > bounds.width || person.height > bounds.height) {
+            return { width: person.width, height: person.height };
+          } else {
+            return bounds;
+          }
+        },
+        { height: 0, width: 0 },
+      );
+
+    // map mouseX to # of randomBytes() + mouseY to limitBytes()
+    glitch.limitBytes(map(personBounds.height, 0, height, 0, 1));
+    glitch.randomBytes(map(personBounds.width, 0, width, 0, 100));
+    glitch.buildImage();
+  }
+
+  image(glitch.image, 0, 0, glitch.width, glitch.height);
+  if (showBackCapture) {
+    image(backCapture, 0, height / 2, width / 2, height / 2);
+  }
+}
+
+function batteryVisualization() {
   if (frameCount % 15 === 0) {
     if (battery.charging) {
       chargingCount++;
@@ -46,22 +134,24 @@ function draw() {
   }
 }
 
-navigator.getBattery().then((bat) => {
-  battery = bat;
-
-  bat.addEventListener("chargingchange", () => {
+function startBatteryListeners() {
+  navigator.getBattery().then((bat) => {
     battery = bat;
-  });
 
-  bat.addEventListener("chargingtimechange", () => {
-    battery = bat;
-  });
+    bat.addEventListener("chargingchange", () => {
+      battery = bat;
+    });
 
-  bat.addEventListener("dischargingtimechange", () => {
-    battery = bat;
-  });
+    bat.addEventListener("chargingtimechange", () => {
+      battery = bat;
+    });
 
-  bat.addEventListener("levelChange", () => {
-    battery = bat;
+    bat.addEventListener("dischargingtimechange", () => {
+      battery = bat;
+    });
+
+    bat.addEventListener("levelChange", () => {
+      battery = bat;
+    });
   });
-});
+}
