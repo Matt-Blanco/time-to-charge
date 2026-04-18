@@ -8,7 +8,8 @@ let battery = {
 };
 
 let chargingCount = 0;
-let glitch;
+let frontGlitch;
+let backGlitch;
 let frontCapture;
 let backCapture;
 let showBackCapture = true;
@@ -52,16 +53,19 @@ function gotDetections(error, results) {
 function setup() {
   createCanvas(windowWidth, windowHeight);
 
-  glitch = new Glitch();
-  glitch.pixelate(1);
+  frontGlitch = new Glitch();
+  frontGlitch.pixelate(1);
+
+  backGlitch = new Glitch();
+  backGlitch.pixelate(1);
 
   frontCapture = createCapture(videoConstraints("user"), videoReady);
-  frontCapture.size(width / 2, height / 2);
+  frontCapture.size(width, height / 2);
   frontCapture.hide();
 
   if (showBackCapture) {
     backCapture = createCapture(videoConstraints("environment"));
-    backCapture.size(width / 2, height / 2);
+    backCapture.size(width, height / 2);
     backCapture.hide();
   }
 }
@@ -72,10 +76,10 @@ function draw() {
   glitchConnection();
 }
 
-function glitchConnection() {
+function buildGlitch(image, glitch) {
   if (frameCount % 3 === 0) {
     if (!mouseIsPressed) {
-      glitch.loadImage(frontCapture);
+      glitch.loadImage(image);
     }
 
     const personBounds = detections
@@ -96,10 +100,16 @@ function glitchConnection() {
     glitch.randomBytes(map(personBounds.width, 0, width, 0, 100));
     glitch.buildImage();
   }
+}
 
-  image(glitch.image, 0, 0, glitch.width, glitch.height);
+function glitchConnection() {
+
+  buildGlitch(frontCapture, frontGlitch);
+  buildGlitch(backCapture, backGlitch);
+
+  image(frontGlitch.image, 0, 0, frontGlitch.width, frontGlitch.height);
   if (showBackCapture) {
-    image(backCapture, 0, height / 2, width / 2, height / 2);
+    image(backGlitch.image, 0, height / 2, backGlitch.width, backGlitch.height);
   }
 }
 
