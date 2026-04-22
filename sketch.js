@@ -20,32 +20,47 @@ let xMax;
 let yMax;
 let zMax;
 
+let cameraX;
+let cameraY;
+let cameraZ;
+
 let smoothing = 0.05;
 
 function setup() {
   createCanvas(windowWidth, windowHeight, WEBGL);
   startBatteryListeners();
+
+  cameraX = width - 100;
+  cameraY = 0;
+  cameraZ = width * 1.5;
+
+  xMax = width;
+  yMax = height;
+  zMax = width;
+
+  camera = createCamera();
+  camera.move(cameraX, cameraY, cameraZ);
+  camera.pan(PI / 9);
+
+  stroke(255);
 }
 
 function draw() {
-  background(255);
+  background(0);
 
   batteryVisualization();
 }
 
 function batteryVisualization() {
-  push();
-  translate(mouseX - width / 2, mouseY - height / 2);
-  fill(0, 0);
-  strokeWeight(1);
-  sphere(50);
-  pop();
+  console.log(points);
 
   stroke(255);
   strokeWeight(1);
-  points.filter(pnt => pnt.isPresent()).forEach((star, indx) => {
-    star.update();
-  });
+  points
+    .filter((pnt) => pnt.isPresent())
+    .forEach((star, indx) => {
+      star.update();
+    });
   orbitControl();
 
   if (frameCount % 15 === 0) {
