@@ -10,124 +10,67 @@ let battery = {
 let chargingCount = 0;
 let frontGlitch;
 let backGlitch;
-let frontCapture;
-let backCapture;
-let showBackCapture = true;
 
-let detector;
-let detections = [];
+const pointCount = 200;
+const points = [];
 
-function videoReady() {
-  // Models available are 'cocossd', 'yolo'
-  detector = ml5.objectDetector("cocossd", modelReady);
-}
+let camera;
 
-// Use `exact` only on devices likely to have a rear camera.
-// On laptops/desktops, `exact: "environment"` throws OverconstrainedError;
-// a plain string acts as a preference and falls back to the available camera.
-function videoConstraints(preferred) {
-  const ua = navigator.userAgent;
-  const isMobileOrTablet =
-    /Mobi|Android|iPhone|iPad|iPod|Tablet/i.test(ua) ||
-    (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
-  return {
-    video: {
-      facingMode: isMobileOrTablet ? { exact: preferred } : preferred,
-    },
-  };
-}
+let xMax;
+let yMax;
+let zMax;
 
-function modelReady() {
-  detector.detect(frontCapture, gotDetections);
-}
-
-function gotDetections(error, results) {
-  if (error) {
-    console.error(error);
-    return;
-  }
-  detections = results;
-  detector.detect(frontCapture, gotDetections);
-}
+let smoothing = 0.05;
 
 function setup() {
-  createCanvas(windowWidth, windowHeight);
-
-  frontGlitch = new Glitch();
-  frontGlitch.pixelate(1);
-
-  backGlitch = new Glitch();
-  backGlitch.pixelate(1);
-
-  frontCapture = createCapture(videoConstraints("user"), videoReady);
-  frontCapture.size(width, height / 2);
-  frontCapture.hide();
-
-  if (showBackCapture) {
-    backCapture = createCapture(videoConstraints("environment"));
-    backCapture.size(width, height / 2);
-    backCapture.hide();
-  }
+  createCanvas(windowWidth, windowHeight, WEBGL);
+  startBatteryListeners();
 }
 
 function draw() {
-  background(0);
+  background(255);
 
-  glitchConnection();
-}
-
-function buildGlitch(image, glitch) {
-  if (frameCount % 3 === 0) {
-    if (!mouseIsPressed) {
-      glitch.loadImage(image);
-    }
-
-    const personBounds = detections
-      .filter((d) => d.label.toLowerCase() === "person")
-      .reduce(
-        (person, bounds) => {
-          if (person.width > bounds.width || person.height > bounds.height) {
-            return { width: person.width, height: person.height };
-          } else {
-            return bounds;
-          }
-        },
-        { height: 0, width: 0 },
-      );
-
-    // map mouseX to # of randomBytes() + mouseY to limitBytes()
-    glitch.limitBytes(map(personBounds.height, 0, height, 0, 1));
-    glitch.randomBytes(map(personBounds.width, 0, width, 0, 100));
-    glitch.buildImage();
-  }
-}
-
-function glitchConnection() {
-
-  buildGlitch(frontCapture, frontGlitch);
-  buildGlitch(backCapture, backGlitch);
-
-  image(frontGlitch.image, 0, 0, frontGlitch.width, frontGlitch.height);
-  if (showBackCapture) {
-    image(backGlitch.image, 0, height / 2, backGlitch.width, backGlitch.height);
-  }
+  batteryVisualization();
 }
 
 function batteryVisualization() {
+  push();
+  translate(mouseX - width / 2, mouseY - height / 2);
+  fill(0, 0);
+  strokeWeight(1);
+  sphere(50);
+  pop();
+
+  stroke(255);
+  strokeWeight(1);
+  points.filter(pnt => pnt.isPresent()).forEach((star, indx) => {
+    star.update();
+  });
+  orbitControl();
+
   if (frameCount % 15 === 0) {
     if (battery.charging) {
+      const x = random(-xMax, xMax);
+      const y = random(-yMax, yMax);
+      const z = random(-zMax, zMax);
+
+      points.push(new Star(x, y, z));
+
       chargingCount++;
     } else if (!battery.charging && chargingCount > 0) {
       chargingCount--;
+
+      points.pop();
     }
   }
 
+  /*
   textFont("lincoln-electric-regular");
   fill(0, lerp(0, 100, map(chargingCount, 0, 50, 0, 1)));
   textSize(50);
   text("What is a Joule?", width / 2 - 50, 50);
   text(`charge count: ${chargingCount}`, width / 2 - 50, 150);
-
+    */
   if (showBatteryInfo) {
     text(`charging: ${battery.charging}`, width / 2, height / 2);
     text(
@@ -164,4 +107,60 @@ function startBatteryListeners() {
       battery = bat;
     });
   });
+}
+
+class Star {
+  constructor(x, y, z) {
+    // Random starting angles
+
+    this.theta = random(TWO_PI);
+    this.phi = random(PI);
+
+    this.orbitRadius = random(100, xMax * 2);
+
+    this.pos = createVector(x, y, z);
+    this.velocity = createVector(
+      floor(random(-1, 1)),
+      floor(random(-1, 1)),
+      floor(random(-1, 1)),
+    );
+
+    this.originalVelocity = createVector(
+      this.velocity.x,
+      this.velocity.y,
+      this.velocity.z,
+    );
+
+    this.life = 200;
+  }
+
+  update() {
+    this.theta += 0.01;
+    this.phi += 0.005;
+
+    // Save last state
+    this.previousPos = createVector(this.pos.x, this.pos.y, this.pos.z);
+
+    // Update position
+    this.pos = createVector(
+      this.orbitRadius * sin(this.phi) * cos(this.theta),
+      this.orbitRadius * sin(this.phi) * sin(this.theta),
+      this.orbitRadius * cos(this.phi),
+    );
+
+    this.life--;
+
+    this.draw();
+  }
+
+  draw() {
+    push();
+    translate(width / 2, height / 2);
+    point(this.pos.x, this.pos.y, this.pos.z);
+    pop();
+  }
+
+  isPresent() {
+    return this.life > 0;
+  }
 }
