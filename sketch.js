@@ -85,7 +85,7 @@ function buildBatteryTargets() {
     { sampleFactor },
   );
   const chargeAmount = font.textToPoints(
-    `${energyMade.toFixed(2)} Wh`,
+    `${energyMade.toFixed(2)} mA`,
     -width / 2 + 25,
     125,
     fontSize,
@@ -96,7 +96,7 @@ function buildBatteryTargets() {
     sampleFactor,
   });
   const dischargeAmount = font.textToPoints(
-    `${energyUsed.toFixed(2)} Wh`,
+    `${energyUsed.toFixed(2)} mA`,
     50,
     125,
     fontSize,
