@@ -299,7 +299,7 @@ class Star {
   draw(progress) {
     const alpha = 160 + (255 - 160) * progress;
     stroke(252, 182, 32, alpha);
-    strokeWeight(0.8);
+    strokeWeight(1);
     point(this.pos.x, this.pos.y, this.pos.z);
   }
 
