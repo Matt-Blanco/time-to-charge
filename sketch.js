@@ -38,6 +38,11 @@ let runtime;
 let energyUsed = 0;
 let energyMade = 0;
 
+let batteryTargetsCache = null;
+let batteryTargetsKey = "";
+let clockCache = null;
+let clockCacheKey = "";
+
 async function preload() {
   await startBatteryListeners();
   font = loadFont(
@@ -74,7 +79,14 @@ function setup() {
 }
 
 function buildBatteryTargets() {
-  const sampleFactor = 0.1;
+  const energyMadeStr = energyMade.toFixed(2);
+  const energyUsedStr = energyUsed.toFixed(2);
+  const key = `${energyMadeStr}|${energyUsedStr}|${width}|${height}`;
+  if (key === batteryTargetsKey && batteryTargetsCache) {
+    return batteryTargetsCache;
+  }
+
+  const sampleFactor = 0.8;
   const fontSize = min(width, height) * 0.07;
 
   const labelY = height * 0.05;
@@ -91,21 +103,21 @@ function buildBatteryTargets() {
   };
 
   const chargePoints = placeCentered("Energy Created", leftCenterX, labelY);
-  const chargeAmount = placeCentered(
-    `${energyMade.toFixed(2)} mA`,
-    leftCenterX,
-    valueY,
-  );
+  const chargeAmount = placeCentered(`${energyMadeStr} mA`, leftCenterX, valueY);
   const dischargePoints = placeCentered("Energy Used", rightCenterX, labelY);
   const dischargeAmount = placeCentered(
-    `${energyUsed.toFixed(2)} mA`,
+    `${energyUsedStr} mA`,
     rightCenterX,
     valueY,
   );
 
-  return chargePoints
+  const result = chargePoints
     .concat(chargeAmount, dischargePoints, dischargeAmount)
     .map((pnt) => createVector(pnt.x, pnt.y, 0));
+
+  batteryTargetsKey = key;
+  batteryTargetsCache = result;
+  return result;
 }
 
 function draw() {
@@ -133,8 +145,11 @@ function batteryVisualization() {
   }
 
   runtime = millis() / 1000;
-  batteryTargets = buildBatteryTargets();
+  const newTargets = buildBatteryTargets();
+  const targetsChanged = newTargets !== batteryTargets;
+  batteryTargets = newTargets;
 
+  const previousLength = points.length;
   while (points.length < batteryTargets.length) {
     const i = points.length;
     const x = random(-xMax, xMax);
@@ -143,8 +158,14 @@ function batteryVisualization() {
     points.push(new Star(x, y, z, i, 0));
   }
 
-  for (let i = 0; i < points.length; i++) {
-    points[i].target = batteryTargets[i % batteryTargets.length];
+  if (targetsChanged) {
+    for (let i = 0; i < points.length; i++) {
+      points[i].target = batteryTargets[i % batteryTargets.length];
+    }
+  } else if (points.length > previousLength) {
+    for (let i = previousLength; i < points.length; i++) {
+      points[i].target = batteryTargets[i % batteryTargets.length];
+    }
   }
 
   if (battery.charging) {
@@ -173,17 +194,22 @@ function batteryVisualization() {
   const date = new Date(null);
   date.setSeconds(runtime); // specify value for SECONDS here
   const result = date.toISOString().slice(11, 19);
-  const clockSize = min(width, height) * 0.11;
-  const clockBounds = font.textBounds(result, 0, 0, clockSize);
-  const clockX = -clockBounds.w / 2;
-  const clockY = -height / 2 + clockSize + height * 0.04;
-  const displayTime = font.textToPoints(result, clockX, clockY, clockSize, {
-    sampleFactor: 0.3,
-  });
+  const clockKey = `${result}|${width}|${height}`;
+  if (clockKey !== clockCacheKey) {
+    const clockSize = min(width, height) * 0.11;
+    const clockBounds = font.textBounds(result, 0, 0, clockSize);
+    const clockX = -clockBounds.w / 2;
+    const clockY = -height / 2 + clockSize + height * 0.04;
+    clockCache = font.textToPoints(result, clockX, clockY, clockSize, {
+      sampleFactor: 0.3,
+    });
+    clockCacheKey = clockKey;
+  }
   strokeWeight(1);
-  displayTime.forEach((pnt) => {
+  for (let i = 0; i < clockCache.length; i++) {
+    const pnt = clockCache[i];
     point(pnt.x, pnt.y, 1);
-  });
+  }
 
   for (let i = 0; i < points.length; i++) {
     points[i].update();
@@ -273,7 +299,7 @@ class Star {
   draw(progress) {
     const alpha = 160 + (255 - 160) * progress;
     stroke(252, 182, 32, alpha);
-    strokeWeight(1);
+    strokeWeight(0.8);
     point(this.pos.x, this.pos.y, this.pos.z);
   }
 
