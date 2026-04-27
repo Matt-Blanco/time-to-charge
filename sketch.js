@@ -75,32 +75,32 @@ function setup() {
 
 function buildBatteryTargets() {
   const sampleFactor = 0.1;
-  const fontSize = 72;
+  const fontSize = min(width, height) * 0.07;
 
-  const chargePoints = font.textToPoints(
-    `Energy Created`,
-    -width / 2 + 25,
-    60,
-    fontSize,
-    { sampleFactor },
-  );
-  const chargeAmount = font.textToPoints(
+  const labelY = height * 0.05;
+  const valueY = labelY + fontSize * 0.95;
+
+  const leftCenterX = -width / 4;
+  const rightCenterX = width / 4;
+
+  const placeCentered = (str, centerX, y) => {
+    const bounds = font.textBounds(str, 0, 0, fontSize);
+    return font.textToPoints(str, centerX - bounds.w / 2, y, fontSize, {
+      sampleFactor,
+    });
+  };
+
+  const chargePoints = placeCentered("Energy Created", leftCenterX, labelY);
+  const chargeAmount = placeCentered(
     `${energyMade.toFixed(2)} mA`,
-    -width / 2 + 25,
-    125,
-    fontSize,
-    { sampleFactor },
+    leftCenterX,
+    valueY,
   );
-
-  const dischargePoints = font.textToPoints(`Energy Used`, 50, 60, fontSize, {
-    sampleFactor,
-  });
-  const dischargeAmount = font.textToPoints(
+  const dischargePoints = placeCentered("Energy Used", rightCenterX, labelY);
+  const dischargeAmount = placeCentered(
     `${energyUsed.toFixed(2)} mA`,
-    50,
-    125,
-    fontSize,
-    { sampleFactor },
+    rightCenterX,
+    valueY,
   );
 
   return chargePoints
@@ -173,17 +173,15 @@ function batteryVisualization() {
   const date = new Date(null);
   date.setSeconds(runtime); // specify value for SECONDS here
   const result = date.toISOString().slice(11, 19);
-  const displayTime = font.textToPoints(
-    `${result}`,
-    -width / 2 + 475,
-    -250,
-    96,
-    {
-      sampleFactor: 0.3,
-    },
-  );
+  const clockSize = min(width, height) * 0.11;
+  const clockBounds = font.textBounds(result, 0, 0, clockSize);
+  const clockX = -clockBounds.w / 2;
+  const clockY = -height / 2 + clockSize + height * 0.04;
+  const displayTime = font.textToPoints(result, clockX, clockY, clockSize, {
+    sampleFactor: 0.3,
+  });
+  strokeWeight(0.75);
   displayTime.forEach((pnt) => {
-    strokeWeight(0.5)
     point(pnt.x, pnt.y, 1);
   });
 
