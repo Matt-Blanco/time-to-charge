@@ -180,7 +180,7 @@ function batteryVisualization() {
   const displayTime = font.textToPoints(result, clockX, clockY, clockSize, {
     sampleFactor: 0.3,
   });
-  strokeWeight(0.75);
+  strokeWeight(1);
   displayTime.forEach((pnt) => {
     point(pnt.x, pnt.y, 1);
   });
@@ -273,7 +273,7 @@ class Star {
   draw(progress) {
     const alpha = 160 + (255 - 160) * progress;
     stroke(252, 182, 32, alpha);
-    strokeWeight(0.75);
+    strokeWeight(1);
     point(this.pos.x, this.pos.y, this.pos.z);
   }
 
