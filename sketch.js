@@ -86,7 +86,7 @@ function buildBatteryTargets() {
     return batteryTargetsCache;
   }
 
-  const sampleFactor = 0.8;
+  const sampleFactor = 0.20;
   const fontSize = min(width, height) * 0.07;
 
   const labelY = height * 0.05;
