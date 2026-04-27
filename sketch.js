@@ -167,7 +167,7 @@ function batteryVisualization() {
 
   lastChargingState = battery.charging;
 
-  formationProgress = lerp(formationProgress, formationTarget, 0.02);
+  formationProgress = lerp(formationProgress, formationTarget, 0.09);
 
   push();
   const date = new Date(null);
