@@ -24,6 +24,8 @@ function videoConstraints(preferred) {
   };
 }
 
+const detectIntervalMs = 300;
+
 function frontVideoReady() {
   // Models available are 'cocossd', 'yolo'
   frontDetector = ml5.objectDetector("cocossd", () => {
@@ -43,7 +45,10 @@ function gotFrontDetections(error, results) {
     return;
   }
   frontDetections = results;
-  frontDetector.detect(frontCapture, gotFrontDetections);
+  setTimeout(
+    () => frontDetector.detect(frontCapture, gotFrontDetections),
+    detectIntervalMs,
+  );
 }
 
 function gotBackDetections(error, results) {
@@ -52,7 +57,10 @@ function gotBackDetections(error, results) {
     return;
   }
   backDetections = results;
-  backDetector.detect(backCapture, gotBackDetections);
+  setTimeout(
+    () => backDetector.detect(backCapture, gotBackDetections),
+    detectIntervalMs,
+  );
 }
 
 function setup() {
@@ -64,16 +72,16 @@ function setup() {
   backGlitch = new Glitch();
   backGlitch.pixelate(1);
 
-  frontCapture = createCapture(videoConstraints("user"), frontVideoReady);
+  frontCapture = createCapture(videoConstraints("environment"), frontVideoReady);
   frontCapture.size(width / 4, height / 4);
   frontCapture.hide();
 
   if (showBackCapture) {
     backCapture = createCapture(
-      videoConstraints("environment"),
+      videoConstraints("user"),
       backVideoReady,
     );
-    backCapture.size(width, height / 2);
+    backCapture.size(width / 4, height / 8);
     backCapture.hide();
   }
 }
@@ -84,8 +92,8 @@ function draw() {
   glitchConnection();
 }
 
-function buildGlitch(image, glitch, detections) {
-  if (frameCount % 3 !== 0) return;
+function buildGlitch(capture, glitch, detections) {
+  if (frameCount % 12 !== 0) return;
 
   const people = detections.filter((d) => d.label.toLowerCase() === "person");
 
@@ -93,22 +101,13 @@ function buildGlitch(image, glitch, detections) {
 
   if (people.length === 0) return;
 
-  const largest = people.reduce((a, b) =>
-    a.width * a.height > b.width * b.height ? a : b,
-  );
-
-  if (!mouseIsPressed) {
-    glitch.loadImage(image);
-  }
-
-  glitch.limitBytes(map(largest.height, 0, image.height, 1, 0));
-  glitch.randomBytes(map(largest.width, 0, image.width, 100, 0));
+  glitch.loadImage(capture);
+  glitch.limitBytes(0);
+  glitch.randomBytes(50);
   glitch.buildImage();
 }
 
 function drawGlitchAroundBounds(capture, glitch, dx, dy, dw, dh) {
-  image(capture, dx, dy, dw, dh);
-
   const bounds = glitch.bounds;
   if (
     !bounds ||
@@ -118,6 +117,10 @@ function drawGlitchAroundBounds(capture, glitch, dx, dy, dw, dh) {
   ) {
     return;
   }
+
+  noFill();
+  stroke(255, 0, 255);
+  strokeWeight(2);
 
   for (const b of bounds) {
     const sxRatio = b.x / capture.width;
@@ -142,12 +145,10 @@ function drawGlitchAroundBounds(capture, glitch, dx, dy, dw, dh) {
       shRatio * glitch.image.height,
     );
 
-    noFill();
-    stroke(255, 0, 255);
-    strokeWeight(2);
     rect(px, py, pw, ph);
-    noStroke();
   }
+
+  noStroke();
 }
 
 function glitchConnection() {
@@ -157,7 +158,7 @@ function glitchConnection() {
     buildGlitch(backCapture, backGlitch, backDetections);
   }
 
-  image(frontGlitch.image, 0, 0, frontGlitch.width, frontGlitch.height);
+  image(frontCapture, 0, 0, width, height);
   drawGlitchAroundBounds(frontCapture, frontGlitch, 0, 0, width, height);
   if (showBackCapture) {
     drawGlitchAroundBounds(
@@ -169,4 +170,8 @@ function glitchConnection() {
       height / 2,
     );
   }
+}
+
+function windowResized() {
+  resizeCanvas(windowWidth, windowHeight)
 }
