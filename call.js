@@ -73,7 +73,7 @@ function setup() {
   backGlitch.pixelate(1);
 
   frontCapture = createCapture(videoConstraints("environment"), frontVideoReady);
-  frontCapture.size(height / 4, width / 4);
+  frontCapture.size(width / 4, height / 4);
   frontCapture.hide();
 
   if (showBackCapture) {
@@ -158,24 +158,18 @@ function glitchConnection() {
     buildGlitch(backCapture, backGlitch, backDetections);
   }
 
-  push();
-  translate(width, 0);
-  rotate(HALF_PI);
-
-  image(frontCapture, 0, 0, height, width);
-  drawGlitchAroundBounds(frontCapture, frontGlitch, 0, 0, height, width);
+  image(frontCapture, 0, 0, width, height);
+  drawGlitchAroundBounds(frontCapture, frontGlitch, 0, 0, width, height);
   if (showBackCapture) {
     drawGlitchAroundBounds(
       backCapture,
       backGlitch,
       0,
-      width / 2,
-      height,
-      width / 2,
+      height / 2,
+      width,
+      height / 2,
     );
   }
-
-  pop();
 }
 
 function windowResized() {
