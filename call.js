@@ -88,7 +88,6 @@ function setup() {
 
 function draw() {
   background(0);
-  rotate(-PI/2)
   glitchConnection();
 }
 
