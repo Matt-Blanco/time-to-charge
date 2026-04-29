@@ -85,28 +85,68 @@ function draw() {
 }
 
 function buildGlitch(image, glitch, detections) {
-  if (frameCount % 3 === 0) {
-    if (!mouseIsPressed) {
-      glitch.loadImage(image);
-    }
+  if (frameCount % 3 !== 0) return;
 
-    const personBounds = detections
-      .filter((d) => d.label.toLowerCase() === "person")
-      .reduce(
-        (person, bounds) => {
-          if (person.width > bounds.width || person.height > bounds.height) {
-            return { width: person.width, height: person.height };
-          } else {
-            return bounds;
-          }
-        },
-        { height: 0, width: 0 },
-      );
+  const people = detections.filter((d) => d.label.toLowerCase() === "person");
 
-    // map mouseX to # of randomBytes() + mouseY to limitBytes()
-    glitch.limitBytes(map(personBounds.height, 0, height, 1, 0));
-    glitch.randomBytes(map(personBounds.width, 0, width, 100, 0));
-    glitch.buildImage();
+  glitch.bounds = people;
+
+  if (people.length === 0) return;
+
+  const largest = people.reduce((a, b) =>
+    a.width * a.height > b.width * b.height ? a : b,
+  );
+
+  if (!mouseIsPressed) {
+    glitch.loadImage(image);
+  }
+
+  glitch.limitBytes(map(largest.height, 0, image.height, 1, 0));
+  glitch.randomBytes(map(largest.width, 0, image.width, 100, 0));
+  glitch.buildImage();
+}
+
+function drawGlitchAroundBounds(capture, glitch, dx, dy, dw, dh) {
+  image(capture, dx, dy, dw, dh);
+
+  const bounds = glitch.bounds;
+  if (
+    !bounds ||
+    bounds.length === 0 ||
+    !glitch.image ||
+    glitch.image.width <= 1
+  ) {
+    return;
+  }
+
+  for (const b of bounds) {
+    const sxRatio = b.x / capture.width;
+    const syRatio = b.y / capture.height;
+    const swRatio = b.width / capture.width;
+    const shRatio = b.height / capture.height;
+
+    const px = dx + sxRatio * dw;
+    const py = dy + syRatio * dh;
+    const pw = swRatio * dw;
+    const ph = shRatio * dh;
+
+    image(
+      glitch.image,
+      px,
+      py,
+      pw,
+      ph,
+      sxRatio * glitch.image.width,
+      syRatio * glitch.image.height,
+      swRatio * glitch.image.width,
+      shRatio * glitch.image.height,
+    );
+
+    noFill();
+    stroke(255, 0, 255);
+    strokeWeight(2);
+    rect(px, py, pw, ph);
+    noStroke();
   }
 }
 
@@ -118,7 +158,15 @@ function glitchConnection() {
   }
 
   image(frontGlitch.image, 0, 0, frontGlitch.width, frontGlitch.height);
+  drawGlitchAroundBounds(frontCapture, frontGlitch, 0, 0, width, height);
   if (showBackCapture) {
-    image(backGlitch.image, 0, height / 2, backGlitch.width, backGlitch.height);
+    drawGlitchAroundBounds(
+      backCapture,
+      backGlitch,
+      0,
+      height / 2,
+      width,
+      height / 2,
+    );
   }
 }

@@ -44,7 +44,7 @@ let clockCache = null;
 let clockCacheKey = "";
 
 async function preload() {
-  await startBatteryListeners();
+  // await startBatteryListeners();
   font = loadFont(
     "https://mattblanco.me/itp-nature-of-code/04_oscillators/assets/MonaspaceKrypton-Regular.otf",
   );
@@ -122,7 +122,7 @@ function buildBatteryTargets() {
 
 function draw() {
   background(0);
-  batteryVisualization();
+  //batteryVisualization();
 }
 
 function batteryVisualization() {
