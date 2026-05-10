@@ -339,18 +339,25 @@ function drawBatteryOverlay() {
 
   // Translucent backplate over camera — darker alpha (180) provides enough
   // contrast that we can drop the per-glyph shadowBlur entirely.
+  // Sized to fit both the battery body and the longest status line below.
   if (cameraActive) {
+    push();
+    textSize(22);
+    const widestStatus = textWidth(
+      "Time until battery is charged 99.99 hours",
+    );
+    pop();
+
     const padX = 18 * s;
     const padY = 12 * s;
+    const contentW = Math.max(drawW, widestStatus + 24);
+    const contentH = drawH + 100 * s; // covers all 3 status lines below the body
+    const backX = (width - contentW) / 2 - padX;
+    const backY = offY - padY;
+
     noStroke();
     fill(0, 0, 0, 180);
-    rect(
-      offX - padX,
-      offY - padY,
-      drawW + padX * 2,
-      drawH + padY * 2 + 56 * s,
-      8,
-    );
+    rect(backX, backY, contentW + padX * 2, contentH + padY * 2, 8);
   }
 
   // Cache the battery body to an offscreen buffer at native pixel size.
@@ -371,26 +378,26 @@ function drawBatteryOverlay() {
   fill(255, 255, 255);
   noStroke();
   textAlign(CENTER);
-  textSize(Math.max(10, 11 * s));
+  textSize(22);
   text(status, width / 2, by + 26 * s);
 
   if (charging) {
     text(
       `(Actual time ${(battery.chargingTime / 3600).toFixed(2)} hours)`,
       width / 2 + 3,
-      by + 52 * s,
+      by + 78 * s,
     );
 
     text(
       `Time until battery is charged ${((3700 / 100) * (1 - battery.level)).toFixed(2)} hours`,
       width / 2,
-      by + 40 * s,
+      by + 56 * s,
     );
   } else {
     text(
       `Time until battery depletes ${(battery.dischargingTime / 3600).toFixed(2)} hours`,
       width / 2,
-      by + 40 * s,
+      by + 56 * s,
     );
   }
   textAlign(LEFT);
