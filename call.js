@@ -324,28 +324,37 @@ function drawBatteryOverlay() {
     b = 90;
   }
 
-  const offX = width / 2 - 150;
-  const offY = 20;
+  // Responsive layout: shrink to fit narrow viewports, never upscale past
+  // native. Buffer stays at fixed bufW x bufH so the cache key is unaffected;
+  // we just blit it at a scaled size with a single GPU draw.
+  const bufW = COLS * CW;
+  const bufH = ROWS * CH;
+  const margin = 32;
+  const drawW = Math.min(bufW, Math.max(160, width - margin));
+  const s = drawW / bufW;
+  const drawH = bufH * s;
+  const offX = (width - drawW) / 2;
+  const offY = Math.max(12, height * 0.04);
   const cameraActive = charging;
 
   // Translucent backplate over camera — darker alpha (180) provides enough
   // contrast that we can drop the per-glyph shadowBlur entirely.
   if (cameraActive) {
-    const padX = 18;
-    const padY = 12;
+    const padX = 18 * s;
+    const padY = 12 * s;
     noStroke();
     fill(0, 0, 0, 180);
     rect(
       offX - padX,
       offY - padY,
-      COLS * CW + padX * 2,
-      ROWS * CH + padY * 2 + 56,
+      drawW + padX * 2,
+      drawH + padY * 2 + 56 * s,
       8,
     );
   }
 
-  // Cache the battery body to an offscreen buffer. Only rebuild when the
-  // visible fill step (17 levels) or the integer percent changes.
+  // Cache the battery body to an offscreen buffer at native pixel size.
+  // Only rebuild when the visible fill step or integer percent changes.
   const fillStep = Math.floor(animFillPct / (100 / 17));
   const lvlRound = Math.round(realPct);
   const key = `${cameraActive ? 1 : 0}|${fillStep}|${lvlRound}`;
@@ -353,35 +362,35 @@ function drawBatteryOverlay() {
     rebuildOverlayBuf(animFillPct, realPct, r, g, b, cameraActive);
     overlayKey = key;
   }
-  image(overlayBuf, offX, offY);
+  image(overlayBuf, offX, offY, drawW, drawH);
 
-  const by = offY + ROWS * CH + 10;
+  const by = offY + drawH + 10 * s;
   const status = charging
     ? `[ charging... ${realPct.toFixed(0)}% ]`
     : `[ losing battery ]`;
   fill(255, 255, 255);
   noStroke();
   textAlign(CENTER);
-  textSize(11);
-  text(status, width / 2, by + 26);
+  textSize(Math.max(10, 11 * s));
+  text(status, width / 2, by + 26 * s);
 
   if (charging) {
     text(
       `(Actual time ${(battery.chargingTime / 3600).toFixed(2)} hours)`,
       width / 2 + 3,
-      by + 52,
+      by + 52 * s,
     );
 
     text(
       `Time until battery is charged ${((3700 / 100) * (1 - battery.level)).toFixed(2)} hours`,
       width / 2,
-      by + 40,
+      by + 40 * s,
     );
   } else {
     text(
       `Time until battery depletes ${(battery.dischargingTime / 3600).toFixed(2)} hours`,
       width / 2,
-      by + 40,
+      by + 40 * s,
     );
   }
   textAlign(LEFT);
